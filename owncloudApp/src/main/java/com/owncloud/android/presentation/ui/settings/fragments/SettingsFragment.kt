@@ -70,7 +70,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 true
             }
         } else {
-            settingsScreen?.removePreference(prefPrivacyPolicy)
+            prefPrivacyPolicy?.let { settingsScreen?.removePreference(it) }
         }
 
         prefAboutApp?.apply {

@@ -61,7 +61,9 @@ class SettingsMoreFragment : PreferenceFragmentCompat() {
                 true
             }
         } else {
-            moreScreen?.removePreference(prefHelp)
+            prefHelp?.let {
+                moreScreen?.removePreference(it)
+            }
         }
 
         // Sync contacts, calendars and tasks
@@ -72,7 +74,9 @@ class SettingsMoreFragment : PreferenceFragmentCompat() {
                 true
             }
         } else {
-            moreScreen?.removePreference(prefSync)
+            prefSync?.let {
+                moreScreen?.removePreference(it)
+            }
         }
 
         // Recommend
@@ -89,7 +93,9 @@ class SettingsMoreFragment : PreferenceFragmentCompat() {
                 true
             }
         } else {
-            moreScreen?.removePreference(prefRecommend)
+            prefRecommend?.let {
+                moreScreen?.removePreference(it)
+            }
         }
 
         // Feedback
@@ -102,7 +108,9 @@ class SettingsMoreFragment : PreferenceFragmentCompat() {
                 true
             }
         } else {
-            moreScreen?.removePreference(prefFeedback)
+            prefFeedback?.let {
+                moreScreen?.removePreference(it)
+            }
         }
 
         // Imprint
@@ -113,7 +121,9 @@ class SettingsMoreFragment : PreferenceFragmentCompat() {
                 true
             }
         } else {
-            moreScreen?.removePreference(prefImprint)
+            prefImprint?.let {
+                moreScreen?.removePreference(it)
+            }
         }
     }
 

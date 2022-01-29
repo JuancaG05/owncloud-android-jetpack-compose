@@ -168,25 +168,27 @@ class SettingsSecurityFragment : PreferenceFragmentCompat() {
         }
 
         // Biometric lock
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            screenSecurity?.removePreference(prefBiometric)
-        } else if (prefBiometric != null) {
-            if (!BiometricManager.isHardwareDetected()) { // Biometric not supported
-                screenSecurity?.removePreference(prefBiometric)
+        prefBiometric?.let {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                screenSecurity?.removePreference(it)
             } else {
-                if (prefPasscode?.isChecked == false && prefPattern?.isChecked == false) { // Disable biometric lock if Passcode or Pattern locks are disabled
-                    disableBiometric()
-                }
-
-                prefBiometric?.setOnPreferenceChangeListener { _: Preference?, newValue: Any ->
-                    val incomingValue = newValue as Boolean
-
-                    // No biometric enrolled yet
-                    if (incomingValue && !BiometricManager.hasEnrolledBiometric()) {
-                        showMessageInSnackbar(getString(R.string.biometric_not_enrolled))
-                        return@setOnPreferenceChangeListener false
+                if (!BiometricManager.isHardwareDetected()) { // Biometric not supported
+                    screenSecurity?.removePreference(it)
+                } else {
+                    if (prefPasscode?.isChecked == false && prefPattern?.isChecked == false) { // Disable biometric lock if Passcode or Pattern locks are disabled
+                        disableBiometric()
                     }
-                    true
+
+                    it.setOnPreferenceChangeListener { _: Preference?, newValue: Any ->
+                        val incomingValue = newValue as Boolean
+
+                        // No biometric enrolled yet
+                        if (incomingValue && !BiometricManager.hasEnrolledBiometric()) {
+                            showMessageInSnackbar(getString(R.string.biometric_not_enrolled))
+                            return@setOnPreferenceChangeListener false
+                        }
+                        true
+                    }
                 }
             }
         }
