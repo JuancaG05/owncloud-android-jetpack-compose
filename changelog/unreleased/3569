@@ -1,0 +1,7 @@
+Enhancement: Improvements for the UI in the passcode screen
+
+Redesign of the passcode screen to have the numeric keyboard in the screen instead of using the Android one.
+Linear and Relatives layouts were deleted, now only ConstraintLayout is used.
+
+https://github.com/owncloud/android/issues/3516
+https://github.com/owncloud/android/pull/3582
