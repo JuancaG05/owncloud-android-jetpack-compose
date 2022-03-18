@@ -647,4 +647,7 @@
     <string name="security_enforced_first_option">Passcode lock</string>
     <string name="security_enforced_second_option">Pattern lock</string>
 
+    <!--Deep Links-->
+    <string name="no_account_configured">No account configured previously</string>
+
 </resources>
