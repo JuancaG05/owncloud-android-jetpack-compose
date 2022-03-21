@@ -52,6 +52,7 @@ import com.owncloud.android.presentation.ui.security.PatternActivity
 import com.owncloud.android.presentation.ui.security.PatternManager
 import com.owncloud.android.presentation.ui.settings.fragments.SettingsLogsFragment.Companion.PREFERENCE_ENABLE_LOGGING
 import com.owncloud.android.providers.LogsProvider
+import com.owncloud.android.ui.activity.ReleaseNotesActivity
 import com.owncloud.android.ui.activity.WhatsNewActivity
 import com.owncloud.android.utils.*
 import org.koin.android.ext.koin.androidContext
@@ -97,7 +98,7 @@ class MainApp : Application() {
                     activity !is BiometricActivity
                 ) {
                     StorageMigrationActivity.runIfNeeded(activity)
-                    WhatsNewActivity.runIfNeeded(activity)
+                    ReleaseNotesActivity().runIfNeeded(activity)
                 }
 
                 PreferenceManager.migrateFingerprintToBiometricKey(applicationContext)
@@ -132,7 +133,7 @@ class MainApp : Application() {
                     activity is PatternActivity ||
                     activity is BiometricActivity
                 ) {
-                    WhatsNewActivity.runIfNeeded(activity)
+                    ReleaseNotesActivity().runIfNeeded(activity)
                 }
             }
 
