@@ -29,6 +29,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import com.owncloud.android.authentication.AccountUtils
 import com.owncloud.android.data.preferences.datasources.implementation.SharedPreferencesProviderImpl
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.db.PreferenceManager
@@ -41,6 +42,7 @@ import com.owncloud.android.dependecyinjection.viewModelModule
 import com.owncloud.android.extensions.createNotificationChannel
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.SingleSessionManager
+import com.owncloud.android.presentation.ui.authentication.LoginActivity
 import com.owncloud.android.presentation.ui.migration.StorageMigrationActivity
 import com.owncloud.android.presentation.ui.security.BiometricActivity
 import com.owncloud.android.presentation.ui.security.BiometricManager
@@ -52,9 +54,16 @@ import com.owncloud.android.presentation.ui.security.PatternActivity
 import com.owncloud.android.presentation.ui.security.PatternManager
 import com.owncloud.android.presentation.ui.settings.fragments.SettingsLogsFragment.Companion.PREFERENCE_ENABLE_LOGGING
 import com.owncloud.android.providers.LogsProvider
+import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.ReleaseNotesActivity
+import com.owncloud.android.ui.activity.SplashActivity
 import com.owncloud.android.ui.activity.WhatsNewActivity
-import com.owncloud.android.utils.*
+import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
+import com.owncloud.android.utils.DebugInjector
+import com.owncloud.android.utils.FILE_SYNC_CONFLICT_CHANNEL_ID
+import com.owncloud.android.utils.FILE_SYNC_NOTIFICATION_CHANNEL_ID
+import com.owncloud.android.utils.MEDIA_SERVICE_NOTIFICATION_CHANNEL_ID
+import com.owncloud.android.utils.UPLOAD_NOTIFICATION_CHANNEL_ID
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -68,6 +77,8 @@ import timber.log.Timber
  * classes
  */
 class MainApp : Application() {
+    private val KEY_LAST_SEEN_VERSION_CODE = "lastSeenVersionCode"
+
     override fun onCreate() {
         super.onCreate()
 
@@ -98,7 +109,11 @@ class MainApp : Application() {
                     activity !is BiometricActivity
                 ) {
                     StorageMigrationActivity.runIfNeeded(activity)
-                    ReleaseNotesActivity().runIfNeeded(activity)
+                    if (isFirstRun()) {
+                        WhatsNewActivity.runIfNeeded(activity)
+                    } else {
+                        ReleaseNotesActivity().runIfNeeded(activity)
+                    }
                 }
 
                 PreferenceManager.migrateFingerprintToBiometricKey(applicationContext)
@@ -208,9 +223,19 @@ class MainApp : Application() {
         )
     }
 
-    companion object {
-        private const val BETA_VERSION = "beta"
+    private fun isFirstRun(): Boolean {
+        if (getLastSeenVersionCode() != 0) {
+            return false
+        }
+        return AccountUtils.getCurrentOwnCloudAccount(appContext) == null
+    }
 
+    private fun getLastSeenVersionCode(): Int {
+        val pref = PreferenceManager.getDefaultSharedPreferences(appContext)
+        return pref.getInt(KEY_LAST_SEEN_VERSION_CODE, 0)
+    }
+
+    companion object {
         lateinit var appContext: Context
             private set
         var enabledLogging: Boolean = false
@@ -232,7 +257,6 @@ class MainApp : Application() {
                 } catch (e: PackageManager.NameNotFoundException) {
                     0
                 }
-
             }
 
         val authority: String
@@ -263,23 +287,6 @@ class MainApp : Application() {
                 }
 
                 return String.format(appString, version)
-            }
-
-        val isBeta: Boolean
-            get() {
-                var isBeta = false
-                try {
-                    val packageName = appContext.packageName
-                    val packageInfo = appContext.packageManager.getPackageInfo(packageName, 0)
-                    val versionName = packageInfo.versionName
-                    if (versionName.contains(BETA_VERSION)) {
-                        isBeta = true
-                    }
-                } catch (e: PackageManager.NameNotFoundException) {
-                    Timber.e(e)
-                }
-
-                return isBeta
             }
 
         fun initDependencyInjection() {
