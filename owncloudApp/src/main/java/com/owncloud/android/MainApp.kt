@@ -42,6 +42,7 @@ import com.owncloud.android.dependecyinjection.viewModelModule
 import com.owncloud.android.extensions.createNotificationChannel
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.SingleSessionManager
+import com.owncloud.android.presentation.ui.authentication.LoginActivity
 import com.owncloud.android.presentation.ui.migration.StorageMigrationActivity
 import com.owncloud.android.presentation.ui.security.BiometricActivity
 import com.owncloud.android.presentation.ui.security.BiometricManager
@@ -53,6 +54,7 @@ import com.owncloud.android.presentation.ui.security.PatternActivity
 import com.owncloud.android.presentation.ui.security.PatternManager
 import com.owncloud.android.presentation.ui.settings.fragments.SettingsLogsFragment.Companion.PREFERENCE_ENABLE_LOGGING
 import com.owncloud.android.providers.LogsProvider
+import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.ReleaseNotesActivity
 import com.owncloud.android.ui.activity.WhatsNewActivity
 import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
@@ -107,7 +109,10 @@ class MainApp : Application() {
                 ) {
                     StorageMigrationActivity.runIfNeeded(activity)
                     if (isFirstRun()) {
-                        WhatsNewActivity.runIfNeeded(activity)
+                        //When it is LoginActivity to start it only once
+                        if (activity is LoginActivity) {
+                            WhatsNewActivity.runIfNeeded(activity)
+                        }
                     } else {
                         ReleaseNotesActivity().runIfNeeded(activity)
                     }
@@ -248,13 +253,12 @@ class MainApp : Application() {
 
         val versionCode: Int
             get() {
-                /*return try {
+                return try {
                     val thisPackageName = appContext.packageName
                     appContext.packageManager.getPackageInfo(thisPackageName, 0).versionCode
                 } catch (e: PackageManager.NameNotFoundException) {
                     0
-                }*/
-                return 22345650
+                }
             }
 
         val authority: String
