@@ -5,6 +5,7 @@
  * @author David A. Velasco
  * @author David González Verdugo
  * @author Christian Schabesberger
+ * @author David Crespo Ríos
  * Copyright (C) 2020 ownCloud GmbH.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -97,6 +98,8 @@ class MainApp : Application() {
         // initialise thumbnails cache on background thread
         ThumbnailsCacheManager.InitDiskCacheTask().execute()
 
+        initDependencyInjection()
+
         // register global protection with pass code, pattern lock and biometric lock
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -116,7 +119,7 @@ class MainApp : Application() {
                         }
                     } else {
                         if (activity is FileDisplayActivity || activity is LoginActivity) {
-                            ReleaseNotesActivity().runIfNeeded(activity)
+                            ReleaseNotesActivity.runIfNeeded(activity)
                         }
                     }
                 }
@@ -160,7 +163,6 @@ class MainApp : Application() {
             }
         })
 
-        initDependencyInjection()
         checkLockDelayEnforced(appContext)
     }
 
