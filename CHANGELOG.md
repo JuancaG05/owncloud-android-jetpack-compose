@@ -9,9 +9,11 @@ Summary
 -------
 
 * Bugfix - Security flags for recording screen: [#3468](https://github.com/owncloud/android/issues/3468)
+* Bugfix - Crash when changing orientation in Details view: [#3571](https://github.com/owncloud/android/issues/3571)
 * Enhancement - Lock delay enforced: [#3440](https://github.com/owncloud/android/issues/3440)
 * Enhancement - Extended security enforced: [#3543](https://github.com/owncloud/android/issues/3543)
 * Enhancement - Improvements for the UI in the file details screen: [#3557](https://github.com/owncloud/android/issues/3557)
+* Enhancement - Improvements for the UI in the pattern screen: [#3580](https://github.com/owncloud/android/issues/3580)
 * Enhancement - Release Notes: [#3442](https://github.com/owncloud/android/issues/3442)
 
 Details
@@ -25,6 +27,14 @@ Details
 
    https://github.com/owncloud/android/issues/3468
    https://github.com/owncloud/android/pull/3560
+
+* Bugfix - Crash when changing orientation in Details view: [#3571](https://github.com/owncloud/android/issues/3571)
+
+   Previously, the app crashes when changing orientation in Details view after installing Now,
+   app shows correctly the details after installing.
+
+   https://github.com/owncloud/android/issues/3571
+   https://github.com/owncloud/android/pull/3589
 
 * Enhancement - Lock delay enforced: [#3440](https://github.com/owncloud/android/issues/3440)
 
@@ -49,6 +59,13 @@ Details
 
    https://github.com/owncloud/android/issues/3557
    https://github.com/owncloud/android/pull/3569
+   
+* Enhancement - Improvements for the UI in the pattern screen: [#3580](https://github.com/owncloud/android/issues/3580)
+
+   Redesign of the pattern screen. Cancel button deleted and new back arrow in the toolbar.
+
+   https://github.com/owncloud/android/issues/3580
+   https://github.com/owncloud/android/pull/3587
 
 * Enhancement - Release Notes: [#3442](https://github.com/owncloud/android/issues/3442)
 
