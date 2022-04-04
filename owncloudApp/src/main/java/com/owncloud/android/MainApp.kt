@@ -58,6 +58,7 @@ import com.owncloud.android.presentation.ui.settings.fragments.SettingsLogsFragm
 import com.owncloud.android.providers.LogsProvider
 import com.owncloud.android.ui.activity.FileDisplayActivity
 import com.owncloud.android.ui.activity.ReleaseNotesActivity
+import com.owncloud.android.ui.activity.SplashActivity
 import com.owncloud.android.ui.activity.WhatsNewActivity
 import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
 import com.owncloud.android.utils.DebugInjector
