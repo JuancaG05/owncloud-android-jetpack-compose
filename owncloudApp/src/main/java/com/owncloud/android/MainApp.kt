@@ -129,8 +129,13 @@ class MainApp : Application() {
 
             override fun onActivityStarted(activity: Activity) {
                 Timber.v("${activity.javaClass.simpleName} onStart() starting")
-                PassCodeManager.onActivityStarted(activity)
-                PatternManager.onActivityStarted(activity)
+                if (activity is SplashActivity ||
+                    activity is FileDisplayActivity ||
+                    activity is LoginActivity
+                ) {
+                    PassCodeManager.onActivityStarted(activity)
+                    PatternManager.onActivityStarted(activity)
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     BiometricManager.onActivityStarted(activity)
                 }
