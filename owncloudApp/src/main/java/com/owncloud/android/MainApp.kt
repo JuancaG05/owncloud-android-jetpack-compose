@@ -41,6 +41,7 @@ import com.owncloud.android.dependecyinjection.viewModelModule
 import com.owncloud.android.extensions.createNotificationChannel
 import com.owncloud.android.lib.common.OwnCloudClient
 import com.owncloud.android.lib.common.SingleSessionManager
+import com.owncloud.android.presentation.ui.authentication.LoginActivity
 import com.owncloud.android.presentation.ui.migration.StorageMigrationActivity
 import com.owncloud.android.presentation.ui.security.BiometricActivity
 import com.owncloud.android.presentation.ui.security.BiometricManager
@@ -52,12 +53,10 @@ import com.owncloud.android.presentation.ui.security.PatternActivity
 import com.owncloud.android.presentation.ui.security.PatternManager
 import com.owncloud.android.presentation.ui.settings.fragments.SettingsLogsFragment.Companion.PREFERENCE_ENABLE_LOGGING
 import com.owncloud.android.providers.LogsProvider
+import com.owncloud.android.ui.activity.FileDisplayActivity
+import com.owncloud.android.ui.activity.SplashActivity
 import com.owncloud.android.ui.activity.WhatsNewActivity
-import com.owncloud.android.utils.DOWNLOAD_NOTIFICATION_CHANNEL_ID
-import com.owncloud.android.utils.FILE_SYNC_CONFLICT_CHANNEL_ID
-import com.owncloud.android.utils.FILE_SYNC_NOTIFICATION_CHANNEL_ID
-import com.owncloud.android.utils.MEDIA_SERVICE_NOTIFICATION_CHANNEL_ID
-import com.owncloud.android.utils.UPLOAD_NOTIFICATION_CHANNEL_ID
+import com.owncloud.android.utils.*
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -77,6 +76,8 @@ class MainApp : Application() {
         appContext = applicationContext
 
         startLogsIfEnabled()
+
+        DebugInjector.injectDebugTools(appContext)
 
         OwnCloudClient.setContext(appContext)
 
@@ -108,8 +109,13 @@ class MainApp : Application() {
 
             override fun onActivityStarted(activity: Activity) {
                 Timber.v("${activity.javaClass.simpleName} onStart() starting")
-                PassCodeManager.onActivityStarted(activity)
-                PatternManager.onActivityStarted(activity)
+                if (activity is SplashActivity ||
+                    activity is FileDisplayActivity ||
+                    activity is LoginActivity
+                ) {
+                    PassCodeManager.onActivityStarted(activity)
+                    PatternManager.onActivityStarted(activity)
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     BiometricManager.onActivityStarted(activity)
                 }
