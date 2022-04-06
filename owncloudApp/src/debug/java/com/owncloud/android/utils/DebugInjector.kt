@@ -1,7 +1,8 @@
 /**
  * ownCloud Android client application
  *
- * Copyright (C) 2022 ownCloud GmbH.
+ * @author Christian Schabesberger
+ * Copyright (C) 2020 ownCloud GmbH.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -18,21 +19,22 @@
 
 package com.owncloud.android.utils
 
-import android.app.Application
 import android.content.Context
 import android.os.Build
-import androidx.test.runner.AndroidJUnitRunner
-import com.github.tmurakami.dexopener.DexOpener
+import android.os.StrictMode
+import com.facebook.stetho.Stetho
 
-/**
- * We need to use DexOpener for executing instrumented tests on <P Android devices,
- * as Mockk documentation suggests https://mockk.io/ANDROID.html
- */
-class OCTestAndroidJUnitRunner : AndroidJUnitRunner() {
-    override fun newApplication(cl: ClassLoader, className: String, context: Context): Application {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            DexOpener.install(this)
+object DebugInjector {
+    open fun injectDebugTools(context: Context) {
+        Stetho.initializeWithDefaults(context)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            StrictMode.setVmPolicy(
+                StrictMode.VmPolicy.Builder()
+                    .penaltyLog()
+                    .detectNonSdkApiUsage()
+                    .build()
+            )
         }
-        return super.newApplication(cl, className, context)
     }
 }

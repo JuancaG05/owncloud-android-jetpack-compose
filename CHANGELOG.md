@@ -9,8 +9,12 @@ Summary
 -------
 
 * Bugfix - Security flags for recording screen: [#3468](https://github.com/owncloud/android/issues/3468)
+* Bugfix - Crash when changing orientation in Details view: [#3571](https://github.com/owncloud/android/issues/3571)
+* Bugfix - Lock displays shown again: [#3591](https://github.com/owncloud/android/issues/3591)
 * Enhancement - Lock delay enforced: [#3440](https://github.com/owncloud/android/issues/3440)
 * Enhancement - Extended security enforced: [#3543](https://github.com/owncloud/android/issues/3543)
+* Enhancement - Improvements for the UI in the file details screen: [#3557](https://github.com/owncloud/android/issues/3557)
+* Enhancement - Improvements for the UI in the pattern screen: [#3580](https://github.com/owncloud/android/issues/3580)
 
 Details
 -------
@@ -23,6 +27,23 @@ Details
 
    https://github.com/owncloud/android/issues/3468
    https://github.com/owncloud/android/pull/3560
+
+* Bugfix - Crash when changing orientation in Details view: [#3571](https://github.com/owncloud/android/issues/3571)
+
+   Previously, the app crashes when changing orientation in Details view after installing Now,
+   app shows correctly the details after installing.
+
+   https://github.com/owncloud/android/issues/3571
+   https://github.com/owncloud/android/pull/3589
+
+* Bugfix - Lock displays shown again: [#3591](https://github.com/owncloud/android/issues/3591)
+
+   Previously, if you clicked on passcode or pattern lock to remove it, and then you clicked on
+   cancel, the lock display was shown again to put the passcode or pattern. Now, if you cancel it,
+   you come back to settings screen.
+
+   https://github.com/owncloud/android/issues/3591
+   https://github.com/owncloud/android/pull/3592
 
 * Enhancement - Lock delay enforced: [#3440](https://github.com/owncloud/android/issues/3440)
 
@@ -39,6 +60,21 @@ Details
 
    https://github.com/owncloud/android/issues/3543
    https://github.com/owncloud/android/pull/3544
+
+* Enhancement - Improvements for the UI in the file details screen: [#3557](https://github.com/owncloud/android/issues/3557)
+
+   Redesign of the file details screen to align the labels with the details. Linear and Relatives
+   layouts were deleted, now only ConstraintLayout is used.
+
+   https://github.com/owncloud/android/issues/3557
+   https://github.com/owncloud/android/pull/3569
+
+* Enhancement - Improvements for the UI in the pattern screen: [#3580](https://github.com/owncloud/android/issues/3580)
+
+   Redesign of the pattern screen. Cancel button deleted and new back arrow in the toolbar.
+
+   https://github.com/owncloud/android/issues/3580
+   https://github.com/owncloud/android/pull/3587
 
 Changelog for ownCloud Android Client [2.20.0] (2022-02-16)
 =======================================
