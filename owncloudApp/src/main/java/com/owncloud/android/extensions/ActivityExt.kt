@@ -308,7 +308,7 @@ fun Activity.manageOptionLockSelected(type: LockType) {
 
     when (type) {
         LockType.PASSCODE -> startActivity(Intent(this, PassCodeActivity::class.java).apply {
-            action = PassCodeActivity.ACTION_REQUEST_WITH_RESULT
+            action = PassCodeActivity.ACTION_CREATE
             putExtra(EXTRAS_LOCK_ENFORCED, true)
         })
         LockType.PATTERN -> startActivity(Intent(this, PatternActivity::class.java).apply {
