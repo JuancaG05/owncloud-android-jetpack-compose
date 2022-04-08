@@ -15,6 +15,7 @@ Summary
 * Enhancement - Extended security enforced: [#3543](https://github.com/owncloud/android/issues/3543)
 * Enhancement - Improvements for the UI in the file details screen: [#3557](https://github.com/owncloud/android/issues/3557)
 * Enhancement - Improvements for the UI in the pattern screen: [#3580](https://github.com/owncloud/android/issues/3580)
+* Enhancement - Prevent taking screenshots: [#3596](https://github.com/owncloud/android/issues/3596)
 
 Details
 -------
@@ -75,6 +76,13 @@ Details
 
    https://github.com/owncloud/android/issues/3580
    https://github.com/owncloud/android/pull/3587
+
+* Enhancement - Prevent taking screenshots: [#3596](https://github.com/owncloud/android/issues/3596)
+
+   New option to prevent taking screenshots.
+
+   https://github.com/owncloud/android/issues/3596
+   https://github.com/owncloud/android/pull/3615
 
 Changelog for ownCloud Android Client [2.20.0] (2022-02-16)
 =======================================
