@@ -69,5 +69,5 @@ val viewModelModule = module {
     viewModel { MigrationViewModel(MainApp.dataFolder, get(), get(), get(), get(), get(), get()) }
     viewModel { PatternViewModel(get()) }
     viewModel { BiometricViewModel(get(), get()) }
-    viewModel { FileDisplayViewModel(get()) }
+    viewModel { FileDisplayViewModel(get(), get(), get()) }
 }
