@@ -24,6 +24,7 @@
 
 package com.owncloud.android.presentation.ui.sharing.fragments
 
+import android.accounts.Account
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -36,19 +37,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +55,7 @@ import com.owncloud.android.datamodel.OCFile
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
+import com.owncloud.android.utils.PreferenceUtils
 
 /**
  * Fragment for sharing a file with sharees (users or groups) or creating
@@ -77,10 +75,16 @@ class ShareFileComposeFragment: Fragment() {
      */
     private var file: OCFile? = null
 
+    /**
+     * OC account holding the file to share, received as a parameter in construction time
+     */
+    private var account: Account? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             file = it.getParcelable(ARG_FILE)
+            account = it.getParcelable(ARG_ACCOUNT)
         }
     }
 
@@ -90,6 +94,7 @@ class ShareFileComposeFragment: Fragment() {
         savedInstanceState: Bundle?
     ): View {
         return ComposeView(requireContext()).apply {
+            filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(requireContext())
             setContent {
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                 Column(
@@ -154,6 +159,7 @@ class ShareFileComposeFragment: Fragment() {
          * The fragment initialization parameters
          */
         private const val ARG_FILE = "FILE"
+        private const val ARG_ACCOUNT = "ACCOUNT"
 
         /**
          * Public factory method to create new ShareFileFragment instances.
@@ -163,10 +169,12 @@ class ShareFileComposeFragment: Fragment() {
          * @return A new instance of fragment ShareFileFragment.
          */
         fun newInstance(
-            fileToShare: OCFile
+            fileToShare: OCFile,
+            account: Account
         ): ShareFileComposeFragment {
             val args = Bundle().apply {
                 putParcelable(ARG_FILE, fileToShare)
+                putParcelable(ARG_ACCOUNT, account)
             }
             return ShareFileComposeFragment().apply { arguments = args }
         }
