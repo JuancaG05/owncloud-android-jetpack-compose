@@ -59,8 +59,22 @@ import com.owncloud.android.datamodel.ThumbnailsCacheManager
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 
+/**
+ * Fragment for sharing a file with sharees (users or groups) or creating
+ * a public link.
+ *
+ * Activities that contain this fragment must implement the
+ * [ShareFragmentListener] interface
+ * to handle interaction events.
+ *
+ * Use the [ShareFileFragment.newInstance] factory method to
+ * create an instance of this fragment.
+ */
 class ShareFileComposeFragment: Fragment() {
 
+    /**
+     * File to share, received as a parameter in construction time
+     */
     private var file: OCFile? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -136,8 +150,18 @@ class ShareFileComposeFragment: Fragment() {
     }
 
     companion object {
+        /**
+         * The fragment initialization parameters
+         */
         private const val ARG_FILE = "FILE"
 
+        /**
+         * Public factory method to create new ShareFileFragment instances.
+         *
+         * @param fileToShare An [OCFile] to show in the fragment
+         * @param account     An ownCloud account
+         * @return A new instance of fragment ShareFileFragment.
+         */
         fun newInstance(
             fileToShare: OCFile
         ): ShareFileComposeFragment {
