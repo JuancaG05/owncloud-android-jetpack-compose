@@ -30,13 +30,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +51,8 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,7 +105,9 @@ class ShareFileComposeFragment: Fragment() {
             setContent {
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                 Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState())
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = dimensionResource(id = R.dimen.standard_padding))
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -123,7 +132,9 @@ class ShareFileComposeFragment: Fragment() {
                             )
                         }
                         Column(
-                            modifier = Modifier.weight(1f).padding(start = 12.dp)
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 12.dp)
                         ) {
                             Text(
                                 text = file?.fileName!!,
@@ -137,18 +148,118 @@ class ShareFileComposeFragment: Fragment() {
                                 Text(
                                     text = DisplayUtils.bytesToHumanReadable(file!!.fileLength, activity),
                                     fontSize = 12.sp,
-                                    color = colorResource(id = R.color.half_black),
+                                    color = colorResource(id = R.color.half_black)
                                 )
                             }
                         }
-                        Image(
-                            painter = painterResource(id = R.drawable.copy_link),
-                            contentDescription = null,
+                        IconButton(
+                            onClick = { /*TODO*/ },
                             modifier = Modifier
                                 .size(28.dp)
                                 .padding(end = dimensionResource(id = R.dimen.standard_half_padding))
-                        )
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.copy_link),
+                                contentDescription = null,
+                                tint = colorResource(id = R.color.half_black)
+                            )
+                        }
                     }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(color = colorResource(id = R.color.actionbar_start_color))
+                            .padding(
+                                end = dimensionResource(id = R.dimen.standard_half_margin),
+                                top = dimensionResource(id = R.dimen.standard_quarter_margin),
+                                bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
+                            )
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.share_with_user_section_title).uppercase(),
+                            modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
+                            color = colorResource(id = R.color.white),
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(
+                            onClick = { /*TODO*/ },
+                            modifier = Modifier.then(Modifier.size(32.dp))
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_add),
+                                contentDescription = null,
+                                tint = colorResource(id = R.color.white)
+                            )
+                        }
+                    }
+                    Text(
+                        text = stringResource(id = R.string.share_no_users),
+                        fontSize = 15.sp,
+                        color = colorResource(id = R.color.half_black),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = dimensionResource(id = R.dimen.standard_half_padding),
+                                top = dimensionResource(id = R.dimen.standard_padding),
+                                bottom = dimensionResource(id = R.dimen.standard_padding)
+                            )
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(color = colorResource(id = R.color.actionbar_start_color))
+                            .padding(
+                                end = dimensionResource(id = R.dimen.standard_half_margin),
+                                top = dimensionResource(id = R.dimen.standard_quarter_margin),
+                                bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
+                            )
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.share_via_link_section_title).uppercase(),
+                            modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
+                            color = colorResource(id = R.color.white),
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(
+                            onClick = { /*TODO*/ },
+                            modifier = Modifier.then(Modifier.size(32.dp))
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_add),
+                                contentDescription = null,
+                                tint = colorResource(id = R.color.white)
+                            )
+                        }
+                    }
+                    Text(
+                        text = stringResource(id = R.string.share_warning_about_forwarding_public_links),
+                        fontSize = 15.sp,
+                        color = colorResource(id = R.color.half_black),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(color = colorResource(id = R.color.warning_background_color))
+                            .padding(
+                                start = dimensionResource(id = R.dimen.standard_half_padding),
+                                top = dimensionResource(id = R.dimen.standard_padding),
+                                bottom = dimensionResource(id = R.dimen.standard_padding)
+                            )
+                    )
+                    Text(
+                        text = stringResource(id = R.string.share_no_public_links),
+                        fontSize = 15.sp,
+                        color = colorResource(id = R.color.half_black),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = dimensionResource(id = R.dimen.standard_half_padding),
+                                top = dimensionResource(id = R.dimen.standard_padding),
+                                bottom = dimensionResource(id = R.dimen.standard_padding)
+                            )
+                    )
                 }
             }
         }
