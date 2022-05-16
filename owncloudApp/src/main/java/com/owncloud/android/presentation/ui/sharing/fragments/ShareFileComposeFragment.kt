@@ -25,6 +25,7 @@
 package com.owncloud.android.presentation.ui.sharing.fragments
 
 import android.accounts.Account
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -60,9 +61,12 @@ import androidx.fragment.app.Fragment
 import com.owncloud.android.R
 import com.owncloud.android.datamodel.OCFile
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
+import com.owncloud.android.domain.sharing.shares.model.OCShare
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
+import timber.log.Timber
+import java.util.Locale
 
 /**
  * Fragment for sharing a file with sharees (users or groups) or creating
@@ -87,6 +91,75 @@ class ShareFileComposeFragment: Fragment() {
      */
     private var account: Account? = null
 
+    /**
+     * Reference to parent listener
+     */
+    private var listener: ShareFragmentListener? = null
+
+    /**
+     * List of public links bound to the file
+     */
+    private var publicLinks: List<OCShare> = listOf()
+
+    /**
+     * Array with numbers already set in public link names
+     * Inspect public links for default names already used
+     * better not suggesting a name than crashing
+     * Sort used numbers in ascending order
+     * Search for lowest unused number
+     * no missing number in the list - take the next to the last one
+     */
+    private val availableDefaultPublicName: String
+        get() {
+            val defaultName = getString(
+                R.string.share_via_link_default_name_template,
+                file?.fileName
+            )
+            val defaultNameNumberedRegex = QUOTE_START + defaultName + QUOTE_END + DEFAULT_NAME_REGEX_SUFFIX
+            val usedNumbers = ArrayList<Int>()
+            var isDefaultNameSet = false
+            var number: String
+            for (share in publicLinks) {
+                if (defaultName == share.name) {
+                    isDefaultNameSet = true
+                } else if (share.name?.matches(defaultNameNumberedRegex.toRegex())!!) {
+                    number = share.name!!.replaceFirst(defaultNameNumberedRegex.toRegex(), "$1")
+                    try {
+                        usedNumbers.add(Integer.parseInt(number))
+                    } catch (e: Exception) {
+                        Timber.e(e, "Wrong capture of number in share named ${share.name}")
+                        return ""
+                    }
+                }
+            }
+
+            if (!isDefaultNameSet) {
+                return defaultName
+            }
+            usedNumbers.sort()
+            var chosenNumber = UNUSED_NUMBER
+            if (usedNumbers.firstOrNull() != USED_NUMBER_SECOND) {
+                chosenNumber = USED_NUMBER_SECOND
+            } else {
+                for (i in 0 until usedNumbers.size - 1) {
+                    val current = usedNumbers[i]
+                    val next = usedNumbers[i + 1]
+                    if (next - current > 1) {
+                        chosenNumber = current + 1
+                        break
+                    }
+                }
+                if (chosenNumber < 0) {
+                    chosenNumber = usedNumbers[usedNumbers.size - 1] + 1
+                }
+            }
+
+            return defaultName + String.format(
+                Locale.getDefault(),
+                DEFAULT_NAME_SUFFIX, chosenNumber
+            )
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -100,6 +173,9 @@ class ShareFileComposeFragment: Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        val shareWithUsersAllowed = resources.getBoolean(R.bool.share_with_users_feature)
+        val shareViaLinkAllowed = resources.getBoolean(R.bool.share_via_link_feature)
+        val shareWarningAllowed = resources.getBoolean(R.bool.warning_sharing_public_link)
         return ComposeView(requireContext()).apply {
             filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(requireContext())
             setContent {
@@ -152,117 +228,148 @@ class ShareFileComposeFragment: Fragment() {
                                 )
                             }
                         }
-                        IconButton(
-                            onClick = { /*TODO*/ },
+                        if (!file?.privateLink.isNullOrEmpty()) {
+                            IconButton(
+                                onClick = { listener?.copyOrSendPrivateLink(file!!) },
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .padding(end = dimensionResource(id = R.dimen.standard_half_padding))
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.copy_link),
+                                    contentDescription = null,
+                                    tint = colorResource(id = R.color.half_black)
+                                )
+                            }
+                        }
+                    }
+                    // Hide share with users section if it is not enabled
+                    if (shareWithUsersAllowed) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier
-                                .size(28.dp)
-                                .padding(end = dimensionResource(id = R.dimen.standard_half_padding))
+                                .fillMaxWidth()
+                                .background(color = colorResource(id = R.color.actionbar_start_color))
+                                .padding(
+                                    end = dimensionResource(id = R.dimen.standard_half_margin),
+                                    top = dimensionResource(id = R.dimen.standard_quarter_margin),
+                                    bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
+                                )
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.copy_link),
-                                contentDescription = null,
-                                tint = colorResource(id = R.color.half_black)
+                            Text(
+                                text = stringResource(id = R.string.share_with_user_section_title).uppercase(),
+                                modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
+                                color = colorResource(id = R.color.white),
+                                fontWeight = FontWeight.Bold
                             )
+                            IconButton(
+                                onClick = {
+                                    // Show Search Fragment
+                                    listener?.showSearchUsersAndGroups()
+                                          },
+                                modifier = Modifier.then(Modifier.size(32.dp))
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_add),
+                                    contentDescription = null,
+                                    tint = colorResource(id = R.color.white)
+                                )
+                            }
                         }
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(color = colorResource(id = R.color.actionbar_start_color))
-                            .padding(
-                                end = dimensionResource(id = R.dimen.standard_half_margin),
-                                top = dimensionResource(id = R.dimen.standard_quarter_margin),
-                                bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
-                            )
-                    ) {
                         Text(
-                            text = stringResource(id = R.string.share_with_user_section_title).uppercase(),
-                            modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
-                            color = colorResource(id = R.color.white),
-                            fontWeight = FontWeight.Bold
+                            text = stringResource(id = R.string.share_no_users),
+                            fontSize = 15.sp,
+                            color = colorResource(id = R.color.half_black),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    start = dimensionResource(id = R.dimen.standard_half_padding),
+                                    top = dimensionResource(id = R.dimen.standard_padding),
+                                    bottom = dimensionResource(id = R.dimen.standard_padding)
+                                )
                         )
-                        IconButton(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier.then(Modifier.size(32.dp))
+                    }
+                    // Hide share via link section if it is not enabled
+                    if (shareViaLinkAllowed) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(color = colorResource(id = R.color.actionbar_start_color))
+                                .padding(
+                                    end = dimensionResource(id = R.dimen.standard_half_margin),
+                                    top = dimensionResource(id = R.dimen.standard_quarter_margin),
+                                    bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
+                                )
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_add),
-                                contentDescription = null,
-                                tint = colorResource(id = R.color.white)
+                            Text(
+                                text = stringResource(id = R.string.share_via_link_section_title).uppercase(),
+                                modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
+                                color = colorResource(id = R.color.white),
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(
+                                onClick = {
+                                    // Show Add Public Link Fragment
+                                    listener?.showAddPublicShare(availableDefaultPublicName)
+                                          },
+                                modifier = Modifier.then(Modifier.size(32.dp))
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_add),
+                                    contentDescription = null,
+                                    tint = colorResource(id = R.color.white)
+                                )
+                            }
+                        }
+                        // Hide warning about public links if not enabled
+                        if (shareWarningAllowed) {
+                            Text(
+                                text = stringResource(id = R.string.share_warning_about_forwarding_public_links),
+                                fontSize = 15.sp,
+                                color = colorResource(id = R.color.half_black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(color = colorResource(id = R.color.warning_background_color))
+                                    .padding(
+                                        start = dimensionResource(id = R.dimen.standard_half_padding),
+                                        top = dimensionResource(id = R.dimen.standard_padding),
+                                        bottom = dimensionResource(id = R.dimen.standard_padding)
+                                    )
                             )
                         }
-                    }
-                    Text(
-                        text = stringResource(id = R.string.share_no_users),
-                        fontSize = 15.sp,
-                        color = colorResource(id = R.color.half_black),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                start = dimensionResource(id = R.dimen.standard_half_padding),
-                                top = dimensionResource(id = R.dimen.standard_padding),
-                                bottom = dimensionResource(id = R.dimen.standard_padding)
-                            )
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(color = colorResource(id = R.color.actionbar_start_color))
-                            .padding(
-                                end = dimensionResource(id = R.dimen.standard_half_margin),
-                                top = dimensionResource(id = R.dimen.standard_quarter_margin),
-                                bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
-                            )
-                    ) {
                         Text(
-                            text = stringResource(id = R.string.share_via_link_section_title).uppercase(),
-                            modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
-                            color = colorResource(id = R.color.white),
-                            fontWeight = FontWeight.Bold
+                            text = stringResource(id = R.string.share_no_public_links),
+                            fontSize = 15.sp,
+                            color = colorResource(id = R.color.half_black),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    start = dimensionResource(id = R.dimen.standard_half_padding),
+                                    top = dimensionResource(id = R.dimen.standard_padding),
+                                    bottom = dimensionResource(id = R.dimen.standard_padding)
+                                )
                         )
-                        IconButton(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier.then(Modifier.size(32.dp))
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_add),
-                                contentDescription = null,
-                                tint = colorResource(id = R.color.white)
-                            )
-                        }
                     }
-                    Text(
-                        text = stringResource(id = R.string.share_warning_about_forwarding_public_links),
-                        fontSize = 15.sp,
-                        color = colorResource(id = R.color.half_black),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(color = colorResource(id = R.color.warning_background_color))
-                            .padding(
-                                start = dimensionResource(id = R.dimen.standard_half_padding),
-                                top = dimensionResource(id = R.dimen.standard_padding),
-                                bottom = dimensionResource(id = R.dimen.standard_padding)
-                            )
-                    )
-                    Text(
-                        text = stringResource(id = R.string.share_no_public_links),
-                        fontSize = 15.sp,
-                        color = colorResource(id = R.color.half_black),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                start = dimensionResource(id = R.dimen.standard_half_padding),
-                                top = dimensionResource(id = R.dimen.standard_padding),
-                                bottom = dimensionResource(id = R.dimen.standard_padding)
-                            )
-                    )
                 }
             }
         }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        try {
+            listener = context as ShareFragmentListener?
+        } catch (e: ClassCastException) {
+            throw ClassCastException(activity.toString() + " must implement OnShareFragmentInteractionListener")
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        listener = null
     }
 
     companion object {
@@ -271,6 +378,18 @@ class ShareFileComposeFragment: Fragment() {
          */
         private const val ARG_FILE = "FILE"
         private const val ARG_ACCOUNT = "ACCOUNT"
+
+        private const val QUOTE_START = "\\Q"
+        private const val QUOTE_END = "\\E"
+        private const val DEFAULT_NAME_REGEX_SUFFIX = " \\((\\d+)\\)\\z"
+        // matches suffix (end of the string with \z) in the form "(X)", where X is an integer of any length;
+        // also captures the number to reference it later during the match;
+        // reference in https://developer.android.com/reference/java/util/regex/Pattern.html#sum
+
+        private const val DEFAULT_NAME_SUFFIX = " (%1\$d)"
+
+        private const val UNUSED_NUMBER = -1
+        private const val USED_NUMBER_SECOND = 2
 
         /**
          * Public factory method to create new ShareFileFragment instances.
