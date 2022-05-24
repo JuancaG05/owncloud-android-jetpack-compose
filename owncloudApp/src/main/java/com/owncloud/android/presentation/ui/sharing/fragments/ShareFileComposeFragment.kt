@@ -44,6 +44,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -61,10 +63,18 @@ import androidx.fragment.app.Fragment
 import com.owncloud.android.R
 import com.owncloud.android.datamodel.OCFile
 import com.owncloud.android.datamodel.ThumbnailsCacheManager
+import com.owncloud.android.domain.capabilities.model.CapabilityBooleanType
 import com.owncloud.android.domain.sharing.shares.model.OCShare
+import com.owncloud.android.domain.sharing.shares.model.ShareType
+import com.owncloud.android.extensions.showErrorInSnackbar
+import com.owncloud.android.presentation.UIResult
+import com.owncloud.android.presentation.viewmodels.capabilities.OCCapabilityViewModel
+import com.owncloud.android.presentation.viewmodels.sharing.OCShareViewModel
 import com.owncloud.android.utils.DisplayUtils
 import com.owncloud.android.utils.MimetypeIconUtil
 import com.owncloud.android.utils.PreferenceUtils
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.parameter.parametersOf
 import timber.log.Timber
 import java.util.Locale
 
@@ -160,12 +170,26 @@ class ShareFileComposeFragment: Fragment() {
             )
         }
 
+    private val ocCapabilityViewModel: OCCapabilityViewModel by viewModel {
+        parametersOf(
+            account?.name
+        )
+    }
+
+    private val ocShareViewModel: OCShareViewModel by viewModel {
+        parametersOf(
+            file?.remotePath,
+            account?.name
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             file = it.getParcelable(ARG_FILE)
             account = it.getParcelable(ARG_ACCOUNT)
         }
+        activity?.setTitle(R.string.share_dialog_title)
     }
 
     override fun onCreateView(
@@ -180,6 +204,64 @@ class ShareFileComposeFragment: Fragment() {
             filterTouchesWhenObscured = PreferenceUtils.shouldDisallowTouchesWithOtherVisibleWindows(requireContext())
             setContent {
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+
+                // Get capabilities to update some UI elements depending on them
+                val capabilitiesState = ocCapabilityViewModel.capabilities.observeAsState()
+                val capabilitiesUiResult = capabilitiesState.value?.peekContent()
+                val capabilities = capabilitiesUiResult?.getStoredData()
+                val isShareApiEnabled = capabilities?.filesSharingApiEnabled == CapabilityBooleanType.TRUE
+                val isPublicShareEnabled = capabilities?.filesSharingPublicEnabled == CapabilityBooleanType.TRUE
+                val isMultiplePublicSharingEnabled = capabilities?.filesSharingPublicMultiple?.isTrue ?: false
+
+                // Get shares to update some UI elements depending on them
+                val sharesState = ocShareViewModel.shares.observeAsState()
+                val sharesUiResult = sharesState.value?.peekContent()
+                val shares = sharesUiResult?.getStoredData()
+                val privateShares = shares?.filter { share ->
+                    share.shareType == ShareType.USER ||
+                            share.shareType == ShareType.GROUP ||
+                            share.shareType == ShareType.FEDERATED
+                }
+                val publicShares = shares?.filter { share ->
+                    share.shareType == ShareType.PUBLIC_LINK
+                }
+
+                when (capabilitiesUiResult) {
+                    is UIResult.Success -> {
+                        listener?.dismissLoading()
+                    }
+                    is UIResult.Error -> {
+                        capabilitiesState.value?.getContentIfNotHandled()?.let {
+                            showErrorInSnackbar(R.string.get_capabilities_error, capabilitiesUiResult.error)
+                        }
+                        listener?.dismissLoading()
+                    }
+                    is UIResult.Loading -> {
+                        listener?.showLoading()
+                    }
+                    else -> {
+                        // To avoid non-exhaustive when warning
+                    }
+                }
+
+                when (sharesUiResult) {
+                    is UIResult.Success -> {
+                        listener?.dismissLoading()
+                    }
+                    is UIResult.Error -> {
+                        sharesState.value?.getContentIfNotHandled()?.let {
+                            showErrorInSnackbar(R.string.get_shares_error, sharesUiResult.error)
+                        }
+                        listener?.dismissLoading()
+                    }
+                    is UIResult.Loading -> {
+                        listener?.showLoading()
+                    }
+                    else -> {
+                        // To avoid non-exhaustive when warning
+                    }
+                }
+
                 Column(
                     modifier = Modifier
                         .verticalScroll(rememberScrollState())
@@ -243,8 +325,8 @@ class ShareFileComposeFragment: Fragment() {
                             }
                         }
                     }
-                    // Hide share with users section if it is not enabled
-                    if (shareWithUsersAllowed) {
+                    // Hide share with users section if it is not enabled or if share API is not enabled
+                    if (shareWithUsersAllowed && isShareApiEnabled) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -290,8 +372,8 @@ class ShareFileComposeFragment: Fragment() {
                                 )
                         )
                     }
-                    // Hide share via link section if it is not enabled
-                    if (shareViaLinkAllowed) {
+                    // Hide share via link section if it is not enabled or if share API or public share are not enabled
+                    if (shareViaLinkAllowed && isShareApiEnabled && isPublicShareEnabled) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -310,18 +392,21 @@ class ShareFileComposeFragment: Fragment() {
                                 color = colorResource(id = R.color.white),
                                 fontWeight = FontWeight.Bold
                             )
-                            IconButton(
-                                onClick = {
-                                    // Show Add Public Link Fragment
-                                    listener?.showAddPublicShare(availableDefaultPublicName)
-                                          },
-                                modifier = Modifier.then(Modifier.size(32.dp))
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_add),
-                                    contentDescription = null,
-                                    tint = colorResource(id = R.color.white)
-                                )
+                            // Show or hide button for adding a new public share depending on the capabilities and the server version
+                            if (isMultiplePublicSharingEnabled || (!isMultiplePublicSharingEnabled && publicLinks.isNullOrEmpty())) {
+                                IconButton(
+                                    onClick = {
+                                        // Show Add Public Link Fragment
+                                        listener?.showAddPublicShare(availableDefaultPublicName)
+                                    },
+                                    modifier = Modifier.then(Modifier.size(32.dp))
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_add),
+                                        contentDescription = null,
+                                        tint = colorResource(id = R.color.white)
+                                    )
+                                }
                             }
                         }
                         // Hide warning about public links if not enabled
