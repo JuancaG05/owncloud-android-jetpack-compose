@@ -217,12 +217,12 @@ class ShareFileComposeFragment: Fragment() {
                 val sharesState = ocShareViewModel.shares.observeAsState()
                 val sharesUiResult = sharesState.value?.peekContent()
                 val shares = sharesUiResult?.getStoredData()
-                val privateShares = shares?.filter { share ->
+                var privateShares = shares?.filter { share ->
                     share.shareType == ShareType.USER ||
                             share.shareType == ShareType.GROUP ||
                             share.shareType == ShareType.FEDERATED
                 }
-                val publicShares = shares?.filter { share ->
+                var publicShares = shares?.filter { share ->
                     share.shareType == ShareType.PUBLIC_LINK
                 }
 
@@ -277,10 +277,11 @@ class ShareFileComposeFragment: Fragment() {
                                 }
                             )
                         }
-                        if (privateShares!!.isEmpty()) {
+                        if (privateShares.isNullOrEmpty()) {
                             item { EmptyListText(text = stringResource(id = R.string.share_no_users)) }
                         } else {
-                            items(privateShares) { share ->
+                            privateShares = privateShares!!.sortedBy { it.sharedWithDisplayName }
+                            items(privateShares!!) { share ->
                                 ShareUserItem(
                                     share = share,
                                     unshare = {
@@ -316,7 +317,28 @@ class ShareFileComposeFragment: Fragment() {
                         if (shareWarningAllowed) {
                             item { WarningText() }
                         }
-                        item { EmptyListText(text = stringResource(id = R.string.share_no_public_links)) }
+                        if (publicShares.isNullOrEmpty()) {
+                            item { EmptyListText(text = stringResource(id = R.string.share_no_public_links)) }
+                        } else {
+                            publicShares = publicShares!!.sortedBy { it.name }
+                            items(publicShares!!) { share ->
+                                SharePublicLinkItem(
+                                    share = share,
+                                    copyOrSend = {
+                                        // Get link from the server and show ShareLinkToDialog
+                                        listener?.copyOrSendPublicLink(share)
+                                    },
+                                    remove = {
+                                        // Remove public link from server
+                                        listener?.showRemoveShare(share)
+                                    },
+                                    edit = {
+                                        listener?.showEditPublicShare(share)
+                                    }
+                                )
+                                Divider(color = colorResource(id = R.color.list_divider_background))
+                            }
+                        }
                     }
                 }
             }
@@ -518,6 +540,56 @@ class ShareFileComposeFragment: Fragment() {
                     bottom = dimensionResource(id = R.dimen.standard_padding)
                 )
         )
+    }
+
+    @Composable
+    fun SharePublicLinkItem(share: OCShare, copyOrSend: () -> Unit, remove: () -> Unit, edit: () -> Unit) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            var name = if (share.name.isNullOrEmpty()) share.token else share.name
+            if (share.shareType == ShareType.GROUP) name = getString(R.string.share_group_clarification, name)
+            Text(
+                text = name!!,
+                fontSize = dimensionResource(id = R.dimen.two_line_primary_text_size).value.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(
+                        top = dimensionResource(id = R.dimen.standard_half_margin),
+                        bottom = dimensionResource(id = R.dimen.standard_half_margin),
+                        start = dimensionResource(id = R.dimen.standard_half_margin)
+                    )
+                    .weight(1f)
+            )
+            IconButton(onClick = copyOrSend) {
+                Icon(
+                    painter = painterResource(id = R.drawable.copy_link),
+                    contentDescription = null,
+                    tint = colorResource(id = R.color.half_black),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .padding(dimensionResource(id = R.dimen.standard_half_padding))
+                )
+            }
+            IconButton(onClick = remove) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_action_delete_grey),
+                    contentDescription = null,
+                    tint = colorResource(id = R.color.half_black),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .padding(dimensionResource(id = R.dimen.standard_half_padding))
+                )
+            }
+            IconButton(onClick = edit) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_lead_pencil_grey),
+                    contentDescription = null,
+                    tint = colorResource(id = R.color.half_black)
+                )
+            }
+        }
     }
 
     companion object {
