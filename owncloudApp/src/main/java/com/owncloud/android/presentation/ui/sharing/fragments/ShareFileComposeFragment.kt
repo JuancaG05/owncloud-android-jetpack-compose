@@ -39,8 +39,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
@@ -189,7 +190,6 @@ class ShareFileComposeFragment: Fragment() {
             file = it.getParcelable(ARG_FILE)
             account = it.getParcelable(ARG_ACCOUNT)
         }
-        activity?.setTitle(R.string.share_dialog_title)
     }
 
     override fun onCreateView(
@@ -262,181 +262,61 @@ class ShareFileComposeFragment: Fragment() {
                     }
                 }
 
-                Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .padding(bottom = dimensionResource(id = R.dimen.standard_padding))
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(dimensionResource(id = R.dimen.standard_padding))
-                    ) {
-                        val thumbnail = ThumbnailsCacheManager.getBitmapFromDiskCache(file?.remoteId.toString())
-                        if (file!!.isImage && thumbnail != null) {
-                            Image(
-                                bitmap = thumbnail.asImageBitmap(),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(dimensionResource(id = R.dimen.file_icon_size))
-                                    .fillMaxSize()
-                            )
-                        } else {
-                            Image(
-                                painter = painterResource(id = MimetypeIconUtil.getFileTypeIconId(file?.mimetype, file?.fileName)),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(dimensionResource(id = R.dimen.file_icon_size))
-                                    .fillMaxSize()
-                            )
-                        }
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 12.dp)
-                        ) {
-                            Text(
-                                text = file?.fileName!!,
-                                fontSize = 16.sp,
-                                color = colorResource(id = R.color.black),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(end = dimensionResource(id = R.dimen.standard_half_margin))
-                            )
-                            if (!file!!.isFolder) {
-                                Text(
-                                    text = DisplayUtils.bytesToHumanReadable(file!!.fileLength, activity),
-                                    fontSize = 12.sp,
-                                    color = colorResource(id = R.color.half_black)
-                                )
-                            }
-                        }
-                        if (!file?.privateLink.isNullOrEmpty()) {
-                            IconButton(
-                                onClick = { listener?.copyOrSendPrivateLink(file!!) },
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .padding(end = dimensionResource(id = R.dimen.standard_half_padding))
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.copy_link),
-                                    contentDescription = null,
-                                    tint = colorResource(id = R.color.half_black)
-                                )
-                            }
-                        }
-                    }
+                LazyColumn {
+                    item { SharedFileRow() }
+
                     // Hide share with users section if it is not enabled or if share API is not enabled
                     if (shareWithUsersAllowed && isShareApiEnabled) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(color = colorResource(id = R.color.actionbar_start_color))
-                                .padding(
-                                    end = dimensionResource(id = R.dimen.standard_half_margin),
-                                    top = dimensionResource(id = R.dimen.standard_quarter_margin),
-                                    bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
-                                )
-                        ) {
-                            Text(
-                                text = stringResource(id = R.string.share_with_user_section_title).uppercase(),
-                                modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
-                                color = colorResource(id = R.color.white),
-                                fontWeight = FontWeight.Bold
-                            )
-                            IconButton(
-                                onClick = {
+                        item {
+                            SectionHeader(
+                                title = stringResource(id = R.string.share_with_user_section_title),
+                                showAddButton = true,
+                                onClickAddButton = {
                                     // Show Search Fragment
                                     listener?.showSearchUsersAndGroups()
-                                          },
-                                modifier = Modifier.then(Modifier.size(32.dp))
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_add),
-                                    contentDescription = null,
-                                    tint = colorResource(id = R.color.white)
+                                }
+                            )
+                        }
+                        if (privateShares!!.isEmpty()) {
+                            item { EmptyListText(text = stringResource(id = R.string.share_no_users)) }
+                        } else {
+                            items(privateShares) { share ->
+                                ShareUserItem(
+                                    share = share,
+                                    unshare = {
+                                        // Unshare
+                                        Timber.d("Removing private share with ${share.sharedWithDisplayName}")
+                                        listener?.showRemoveShare(share)
+                                    },
+                                    edit = {
+                                        // Move to fragment to edit share
+                                        Timber.d("Editing ${share.sharedWithDisplayName}")
+                                        listener?.showEditPrivateShare(share)
+                                    }
                                 )
+                                Divider(color = colorResource(id = R.color.list_divider_background))
                             }
                         }
-                        Text(
-                            text = stringResource(id = R.string.share_no_users),
-                            fontSize = 15.sp,
-                            color = colorResource(id = R.color.half_black),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    start = dimensionResource(id = R.dimen.standard_half_padding),
-                                    top = dimensionResource(id = R.dimen.standard_padding),
-                                    bottom = dimensionResource(id = R.dimen.standard_padding)
-                                )
-                        )
                     }
+
                     // Hide share via link section if it is not enabled or if share API or public share are not enabled
                     if (shareViaLinkAllowed && isShareApiEnabled && isPublicShareEnabled) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(color = colorResource(id = R.color.actionbar_start_color))
-                                .padding(
-                                    end = dimensionResource(id = R.dimen.standard_half_margin),
-                                    top = dimensionResource(id = R.dimen.standard_quarter_margin),
-                                    bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
-                                )
-                        ) {
-                            Text(
-                                text = stringResource(id = R.string.share_via_link_section_title).uppercase(),
-                                modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
-                                color = colorResource(id = R.color.white),
-                                fontWeight = FontWeight.Bold
-                            )
+                        item {
                             // Show or hide button for adding a new public share depending on the capabilities and the server version
-                            if (isMultiplePublicSharingEnabled || (!isMultiplePublicSharingEnabled && publicLinks.isNullOrEmpty())) {
-                                IconButton(
-                                    onClick = {
-                                        // Show Add Public Link Fragment
-                                        listener?.showAddPublicShare(availableDefaultPublicName)
-                                    },
-                                    modifier = Modifier.then(Modifier.size(32.dp))
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_add),
-                                        contentDescription = null,
-                                        tint = colorResource(id = R.color.white)
-                                    )
+                            SectionHeader(
+                                title = stringResource(id = R.string.share_via_link_section_title),
+                                showAddButton = isMultiplePublicSharingEnabled || (!isMultiplePublicSharingEnabled && publicLinks.isNullOrEmpty()),
+                                onClickAddButton = {
+                                    // Show Add Public Link Fragment
+                                    listener?.showAddPublicShare(availableDefaultPublicName)
                                 }
-                            }
+                            )
                         }
                         // Hide warning about public links if not enabled
                         if (shareWarningAllowed) {
-                            Text(
-                                text = stringResource(id = R.string.share_warning_about_forwarding_public_links),
-                                fontSize = 15.sp,
-                                color = colorResource(id = R.color.half_black),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(color = colorResource(id = R.color.warning_background_color))
-                                    .padding(
-                                        start = dimensionResource(id = R.dimen.standard_half_padding),
-                                        top = dimensionResource(id = R.dimen.standard_padding),
-                                        bottom = dimensionResource(id = R.dimen.standard_padding)
-                                    )
-                            )
+                            item { WarningText() }
                         }
-                        Text(
-                            text = stringResource(id = R.string.share_no_public_links),
-                            fontSize = 15.sp,
-                            color = colorResource(id = R.color.half_black),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    start = dimensionResource(id = R.dimen.standard_half_padding),
-                                    top = dimensionResource(id = R.dimen.standard_padding),
-                                    bottom = dimensionResource(id = R.dimen.standard_padding)
-                                )
-                        )
+                        item { EmptyListText(text = stringResource(id = R.string.share_no_public_links)) }
                     }
                 }
             }
@@ -455,6 +335,189 @@ class ShareFileComposeFragment: Fragment() {
     override fun onDetach() {
         super.onDetach()
         listener = null
+    }
+
+    override fun onResume() {
+        super.onResume()
+        activity?.setTitle(R.string.share_dialog_title)
+    }
+
+    @Composable
+    private fun SharedFileRow() {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(dimensionResource(id = R.dimen.standard_padding))
+        ) {
+            val thumbnail = ThumbnailsCacheManager.getBitmapFromDiskCache(file?.remoteId.toString())
+            if (file!!.isImage && thumbnail != null) {
+                Image(
+                    bitmap = thumbnail.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(dimensionResource(id = R.dimen.file_icon_size))
+                        .fillMaxSize()
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = MimetypeIconUtil.getFileTypeIconId(file?.mimetype, file?.fileName)),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(dimensionResource(id = R.dimen.file_icon_size))
+                        .fillMaxSize()
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            ) {
+                Text(
+                    text = file?.fileName!!,
+                    fontSize = 16.sp,
+                    color = colorResource(id = R.color.black),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(end = dimensionResource(id = R.dimen.standard_half_margin))
+                )
+                if (!file!!.isFolder) {
+                    Text(
+                        text = DisplayUtils.bytesToHumanReadable(file!!.fileLength, activity),
+                        fontSize = 12.sp,
+                        color = colorResource(id = R.color.half_black)
+                    )
+                }
+            }
+            if (!file?.privateLink.isNullOrEmpty()) {
+                IconButton(
+                    onClick = { listener?.copyOrSendPrivateLink(file!!) },
+                    modifier = Modifier
+                        .size(28.dp)
+                        .padding(end = dimensionResource(id = R.dimen.standard_half_padding))
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.copy_link),
+                        contentDescription = null,
+                        tint = colorResource(id = R.color.half_black)
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun SectionHeader(title: String, showAddButton: Boolean, onClickAddButton: () -> Unit) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = colorResource(id = R.color.actionbar_start_color))
+                .padding(
+                    end = dimensionResource(id = R.dimen.standard_half_margin),
+                    top = dimensionResource(id = R.dimen.standard_quarter_margin),
+                    bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
+                )
+        ) {
+            Text(
+                text = title.uppercase(),
+                modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
+                color = colorResource(id = R.color.white),
+                fontWeight = FontWeight.Bold
+            )
+            if (showAddButton) {
+                IconButton(
+                    onClick = onClickAddButton,
+                    modifier = Modifier.then(Modifier.size(32.dp))
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_add),
+                        contentDescription = null,
+                        tint = colorResource(id = R.color.white)
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun EmptyListText(text: String) {
+        Text(
+            text = text,
+            fontSize = 15.sp,
+            color = colorResource(id = R.color.half_black),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = dimensionResource(id = R.dimen.standard_half_padding),
+                    top = dimensionResource(id = R.dimen.standard_padding),
+                    bottom = dimensionResource(id = R.dimen.standard_padding)
+                )
+        )
+    }
+
+    @Composable
+    fun ShareUserItem(share: OCShare, unshare: () -> Unit, edit: () -> Unit) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val iconId = if (share.shareType == ShareType.GROUP) R.drawable.ic_group else R.drawable.ic_user
+            var name = if (share.sharedWithAdditionalInfo!!.isEmpty()) share.sharedWithDisplayName
+                        else share.sharedWithDisplayName + " (" + share.sharedWithAdditionalInfo + ")"
+            if (share.shareType == ShareType.GROUP) name = getString(R.string.share_group_clarification, name)
+            Icon(
+                painter = painterResource(id = iconId),
+                contentDescription = null,
+                tint = colorResource(id = R.color.half_black),
+                modifier = Modifier.padding(dimensionResource(id = R.dimen.standard_half_margin))
+            )
+            Text(
+                text = name!!,
+                fontSize = dimensionResource(id = R.dimen.two_line_primary_text_size).value.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(
+                        top = dimensionResource(id = R.dimen.standard_half_margin),
+                        bottom = dimensionResource(id = R.dimen.standard_half_margin),
+                        start = dimensionResource(id = R.dimen.standard_half_margin)
+                    )
+                    .weight(1f)
+            )
+            IconButton(onClick = unshare) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_action_delete_grey),
+                    contentDescription = null,
+                    tint = colorResource(id = R.color.half_black),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .padding(dimensionResource(id = R.dimen.standard_half_padding))
+                )
+            }
+            IconButton(onClick = edit) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_lead_pencil_grey),
+                    contentDescription = null,
+                    tint = colorResource(id = R.color.half_black)
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun WarningText() {
+        Text(
+            text = stringResource(id = R.string.share_warning_about_forwarding_public_links),
+            fontSize = 15.sp,
+            color = colorResource(id = R.color.half_black),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = colorResource(id = R.color.warning_background_color))
+                .padding(
+                    start = dimensionResource(id = R.dimen.standard_half_padding),
+                    top = dimensionResource(id = R.dimen.standard_padding),
+                    bottom = dimensionResource(id = R.dimen.standard_padding)
+                )
+        )
     }
 
     companion object {
