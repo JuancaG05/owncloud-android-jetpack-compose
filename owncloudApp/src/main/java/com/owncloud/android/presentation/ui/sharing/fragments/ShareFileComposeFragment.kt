@@ -434,11 +434,6 @@ class ShareFileComposeFragment: Fragment() {
             modifier = Modifier
                 .fillMaxWidth()
                 .background(color = colorResource(id = R.color.actionbar_start_color))
-                .padding(
-                    end = dimensionResource(id = R.dimen.standard_half_margin),
-                    top = dimensionResource(id = R.dimen.standard_quarter_margin),
-                    bottom = dimensionResource(id = R.dimen.standard_quarter_margin)
-                )
         ) {
             Text(
                 text = title.uppercase(),
@@ -448,8 +443,7 @@ class ShareFileComposeFragment: Fragment() {
             )
             if (showAddButton) {
                 IconButton(
-                    onClick = onClickAddButton,
-                    modifier = Modifier.then(Modifier.size(32.dp))
+                    onClick = onClickAddButton
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_add),
