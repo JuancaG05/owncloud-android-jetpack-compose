@@ -74,7 +74,6 @@ class ShareActivity : FileActivity(), ShareFragmentListener {
         supportFragmentManager.transaction {
             if (savedInstanceState == null && file != null && account != null) {
                 // Add Share fragment on first creation
-                // val fragment = ShareFileFragment.newInstance(file, account!!)
                 val fragment = ShareFileComposeFragment.newInstance(file, account)
                 replace(
                     R.id.share_fragment_container, fragment,

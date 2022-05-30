@@ -87,7 +87,7 @@ import java.util.Locale
  * [ShareFragmentListener] interface
  * to handle interaction events.
  *
- * Use the [ShareFileFragment.newInstance] factory method to
+ * Use the [ShareFileComposeFragment.newInstance] factory method to
  * create an instance of this fragment.
  */
 class ShareFileComposeFragment: Fragment() {
