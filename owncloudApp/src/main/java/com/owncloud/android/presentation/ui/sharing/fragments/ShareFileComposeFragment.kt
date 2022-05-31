@@ -35,7 +35,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -90,7 +89,7 @@ import java.util.Locale
  * Use the [ShareFileComposeFragment.newInstance] factory method to
  * create an instance of this fragment.
  */
-class ShareFileComposeFragment: Fragment() {
+class ShareFileComposeFragment : Fragment() {
 
     /**
      * File to share, received as a parameter in construction time
@@ -106,70 +105,6 @@ class ShareFileComposeFragment: Fragment() {
      * Reference to parent listener
      */
     private var listener: ShareFragmentListener? = null
-
-    /**
-     * List of public links bound to the file
-     */
-    private var publicLinks: List<OCShare> = listOf()
-
-    /**
-     * Array with numbers already set in public link names
-     * Inspect public links for default names already used
-     * better not suggesting a name than crashing
-     * Sort used numbers in ascending order
-     * Search for lowest unused number
-     * no missing number in the list - take the next to the last one
-     */
-    private val availableDefaultPublicName: String
-        get() {
-            val defaultName = getString(
-                R.string.share_via_link_default_name_template,
-                file?.fileName
-            )
-            val defaultNameNumberedRegex = QUOTE_START + defaultName + QUOTE_END + DEFAULT_NAME_REGEX_SUFFIX
-            val usedNumbers = ArrayList<Int>()
-            var isDefaultNameSet = false
-            var number: String
-            for (share in publicLinks) {
-                if (defaultName == share.name) {
-                    isDefaultNameSet = true
-                } else if (share.name?.matches(defaultNameNumberedRegex.toRegex())!!) {
-                    number = share.name!!.replaceFirst(defaultNameNumberedRegex.toRegex(), "$1")
-                    try {
-                        usedNumbers.add(Integer.parseInt(number))
-                    } catch (e: Exception) {
-                        Timber.e(e, "Wrong capture of number in share named ${share.name}")
-                        return ""
-                    }
-                }
-            }
-
-            if (!isDefaultNameSet) {
-                return defaultName
-            }
-            usedNumbers.sort()
-            var chosenNumber = UNUSED_NUMBER
-            if (usedNumbers.firstOrNull() != USED_NUMBER_SECOND) {
-                chosenNumber = USED_NUMBER_SECOND
-            } else {
-                for (i in 0 until usedNumbers.size - 1) {
-                    val current = usedNumbers[i]
-                    val next = usedNumbers[i + 1]
-                    if (next - current > 1) {
-                        chosenNumber = current + 1
-                        break
-                    }
-                }
-                if (chosenNumber < 0) {
-                    chosenNumber = usedNumbers[usedNumbers.size - 1] + 1
-                }
-            }
-
-            return defaultName + String.format(
-                Locale.getDefault(),
-                DEFAULT_NAME_SUFFIX, chosenNumber
-            )
-        }
 
     private val ocCapabilityViewModel: OCCapabilityViewModel by viewModel {
         parametersOf(
@@ -197,6 +132,8 @@ class ShareFileComposeFragment: Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        val ocFile = file ?: throw IllegalArgumentException("File cannot be null")
+
         val shareWithUsersAllowed = resources.getBoolean(R.bool.share_with_users_feature)
         val shareViaLinkAllowed = resources.getBoolean(R.bool.share_via_link_feature)
         val shareWarningAllowed = resources.getBoolean(R.bool.warning_sharing_public_link)
@@ -217,14 +154,14 @@ class ShareFileComposeFragment: Fragment() {
                 val sharesState = ocShareViewModel.shares.observeAsState()
                 val sharesUiResult = sharesState.value?.peekContent()
                 val shares = sharesUiResult?.getStoredData()
-                var privateShares = shares?.filter { share ->
+                val privateShares = shares?.filter { share ->
                     share.shareType == ShareType.USER ||
                             share.shareType == ShareType.GROUP ||
                             share.shareType == ShareType.FEDERATED
-                }
-                var publicShares = shares?.filter { share ->
+                }?.sortedBy { it.sharedWithDisplayName } ?: emptyList()
+                val publicShares = shares?.filter { share ->
                     share.shareType == ShareType.PUBLIC_LINK
-                }
+                }?.sortedBy { it.name } ?: emptyList()
 
                 when (capabilitiesUiResult) {
                     is UIResult.Success -> {
@@ -263,7 +200,7 @@ class ShareFileComposeFragment: Fragment() {
                 }
 
                 LazyColumn {
-                    item { SharedFileRow() }
+                    item { SharedFileRow(ocFile) }
 
                     // Hide share with users section if it is not enabled or if share API is not enabled
                     if (shareWithUsersAllowed && isShareApiEnabled) {
@@ -280,8 +217,7 @@ class ShareFileComposeFragment: Fragment() {
                         if (privateShares.isNullOrEmpty()) {
                             item { EmptyListText(text = stringResource(id = R.string.share_no_users)) }
                         } else {
-                            privateShares = privateShares!!.sortedBy { it.sharedWithDisplayName }
-                            items(privateShares!!) { share ->
+                            items(privateShares) { share ->
                                 ShareUserItem(
                                     share = share,
                                     unshare = {
@@ -306,10 +242,10 @@ class ShareFileComposeFragment: Fragment() {
                             // Show or hide button for adding a new public share depending on the capabilities and the server version
                             SectionHeader(
                                 title = stringResource(id = R.string.share_via_link_section_title),
-                                showAddButton = isMultiplePublicSharingEnabled || (!isMultiplePublicSharingEnabled && publicLinks.isNullOrEmpty()),
+                                showAddButton = isMultiplePublicSharingEnabled || (!isMultiplePublicSharingEnabled && publicShares.isNullOrEmpty()),
                                 onClickAddButton = {
                                     // Show Add Public Link Fragment
-                                    listener?.showAddPublicShare(availableDefaultPublicName)
+                                    listener?.showAddPublicShare(availableDefaultPublicName(publicShares))
                                 }
                             )
                         }
@@ -320,8 +256,7 @@ class ShareFileComposeFragment: Fragment() {
                         if (publicShares.isNullOrEmpty()) {
                             item { EmptyListText(text = stringResource(id = R.string.share_no_public_links)) }
                         } else {
-                            publicShares = publicShares!!.sortedBy { it.name }
-                            items(publicShares!!) { share ->
+                            items(publicShares) { share ->
                                 SharePublicLinkItem(
                                     share = share,
                                     copyOrSend = {
@@ -364,28 +299,86 @@ class ShareFileComposeFragment: Fragment() {
         activity?.setTitle(R.string.share_dialog_title)
     }
 
+    /**
+     * Array with numbers already set in public link names
+     * Inspect public links for default names already used
+     * better not suggesting a name than crashing
+     * Sort used numbers in ascending order
+     * Search for lowest unused number
+     * no missing number in the list - take the next to the last one
+     */
+    private fun availableDefaultPublicName(publicShares: List<OCShare>?): String {
+        val defaultName = getString(
+            R.string.share_via_link_default_name_template,
+            file?.fileName
+        )
+        val defaultNameNumberedRegex = QUOTE_START + defaultName + QUOTE_END + DEFAULT_NAME_REGEX_SUFFIX
+        val usedNumbers = ArrayList<Int>()
+        var isDefaultNameSet = false
+        var number: String
+        if (publicShares != null) {
+            for (share in publicShares) {
+                if (defaultName == share.name) {
+                    isDefaultNameSet = true
+                } else if (share.name?.matches(defaultNameNumberedRegex.toRegex())!!) {
+                    number = share.name!!.replaceFirst(defaultNameNumberedRegex.toRegex(), "$1")
+                    try {
+                        usedNumbers.add(Integer.parseInt(number))
+                    } catch (e: Exception) {
+                        Timber.e(e, "Wrong capture of number in share named ${share.name}")
+                        return ""
+                    }
+                }
+            }
+        }
+
+        if (!isDefaultNameSet) {
+            return defaultName
+        }
+        usedNumbers.sort()
+        var chosenNumber = UNUSED_NUMBER
+        if (usedNumbers.firstOrNull() != USED_NUMBER_SECOND) {
+            chosenNumber = USED_NUMBER_SECOND
+        } else {
+            for (i in 0 until usedNumbers.size - 1) {
+                val current = usedNumbers[i]
+                val next = usedNumbers[i + 1]
+                if (next - current > 1) {
+                    chosenNumber = current + 1
+                    break
+                }
+            }
+            if (chosenNumber < 0) {
+                chosenNumber = usedNumbers[usedNumbers.size - 1] + 1
+            }
+        }
+
+        return defaultName + String.format(
+            Locale.getDefault(),
+            DEFAULT_NAME_SUFFIX, chosenNumber
+        )
+    }
+
     @Composable
-    private fun SharedFileRow() {
+    private fun SharedFileRow(file: OCFile) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(dimensionResource(id = R.dimen.standard_padding))
         ) {
-            val thumbnail = ThumbnailsCacheManager.getBitmapFromDiskCache(file?.remoteId.toString())
-            if (file!!.isImage && thumbnail != null) {
+            val thumbnail = ThumbnailsCacheManager.getBitmapFromDiskCache(file.remoteId.toString())
+            if (file.isImage && thumbnail != null) {
                 Image(
                     bitmap = thumbnail.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier
                         .size(dimensionResource(id = R.dimen.file_icon_size))
-                        .fillMaxSize()
                 )
             } else {
                 Image(
-                    painter = painterResource(id = MimetypeIconUtil.getFileTypeIconId(file?.mimetype, file?.fileName)),
+                    painter = painterResource(id = MimetypeIconUtil.getFileTypeIconId(file.mimetype, file.fileName)),
                     contentDescription = null,
                     modifier = Modifier
                         .size(dimensionResource(id = R.dimen.file_icon_size))
-                        .fillMaxSize()
                 )
             }
             Column(
@@ -394,24 +387,24 @@ class ShareFileComposeFragment: Fragment() {
                     .padding(start = 12.dp)
             ) {
                 Text(
-                    text = file?.fileName!!,
+                    text = file.fileName!!,
                     fontSize = 16.sp,
                     color = colorResource(id = R.color.black),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(end = dimensionResource(id = R.dimen.standard_half_margin))
                 )
-                if (!file!!.isFolder) {
+                if (!file.isFolder) {
                     Text(
-                        text = DisplayUtils.bytesToHumanReadable(file!!.fileLength, activity),
+                        text = DisplayUtils.bytesToHumanReadable(file.fileLength, activity),
                         fontSize = 12.sp,
                         color = colorResource(id = R.color.half_black)
                     )
                 }
             }
-            if (!file?.privateLink.isNullOrEmpty()) {
+            if (!file.privateLink.isNullOrEmpty()) {
                 IconButton(
-                    onClick = { listener?.copyOrSendPrivateLink(file!!) },
+                    onClick = { listener?.copyOrSendPrivateLink(file) },
                     modifier = Modifier
                         .size(28.dp)
                         .padding(end = dimensionResource(id = R.dimen.standard_half_padding))
@@ -478,7 +471,7 @@ class ShareFileComposeFragment: Fragment() {
         ) {
             val iconId = if (share.shareType == ShareType.GROUP) R.drawable.ic_group else R.drawable.ic_user
             var name = if (share.sharedWithAdditionalInfo!!.isEmpty()) share.sharedWithDisplayName
-                        else share.sharedWithDisplayName + " (" + share.sharedWithAdditionalInfo + ")"
+            else share.sharedWithDisplayName + " (" + share.sharedWithAdditionalInfo + ")"
             if (share.shareType == ShareType.GROUP) name = getString(R.string.share_group_clarification, name)
             Icon(
                 painter = painterResource(id = iconId),
