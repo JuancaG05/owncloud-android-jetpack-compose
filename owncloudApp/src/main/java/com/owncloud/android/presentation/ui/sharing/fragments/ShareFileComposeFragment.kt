@@ -487,8 +487,7 @@ class ShareFileComposeFragment : Fragment() {
                 modifier = Modifier
                     .padding(
                         top = dimensionResource(id = R.dimen.standard_half_margin),
-                        bottom = dimensionResource(id = R.dimen.standard_half_margin),
-                        start = dimensionResource(id = R.dimen.standard_half_margin)
+                        bottom = dimensionResource(id = R.dimen.standard_half_margin)
                     )
                     .weight(1f)
             )
