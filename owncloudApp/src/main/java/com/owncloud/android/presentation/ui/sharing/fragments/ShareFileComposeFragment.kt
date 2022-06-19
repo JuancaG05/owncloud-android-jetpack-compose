@@ -214,7 +214,7 @@ class ShareFileComposeFragment : Fragment() {
                                 }
                             )
                         }
-                        if (privateShares.isNullOrEmpty()) {
+                        if (privateShares.isEmpty()) {
                             item { EmptyListText(text = stringResource(id = R.string.share_no_users)) }
                         } else {
                             items(privateShares) { share ->
@@ -242,7 +242,7 @@ class ShareFileComposeFragment : Fragment() {
                             // Show or hide button for adding a new public share depending on the capabilities and the server version
                             SectionHeader(
                                 title = stringResource(id = R.string.share_via_link_section_title),
-                                showAddButton = isMultiplePublicSharingEnabled || (!isMultiplePublicSharingEnabled && publicShares.isNullOrEmpty()),
+                                showAddButton = isMultiplePublicSharingEnabled || (!isMultiplePublicSharingEnabled && publicShares.isEmpty()),
                                 onClickAddButton = {
                                     // Show Add Public Link Fragment
                                     listener?.showAddPublicShare(availableDefaultPublicName(publicShares))
@@ -253,7 +253,7 @@ class ShareFileComposeFragment : Fragment() {
                         if (shareWarningAllowed) {
                             item { WarningText() }
                         }
-                        if (publicShares.isNullOrEmpty()) {
+                        if (publicShares.isEmpty()) {
                             item { EmptyListText(text = stringResource(id = R.string.share_no_public_links)) }
                         } else {
                             items(publicShares) { share ->
