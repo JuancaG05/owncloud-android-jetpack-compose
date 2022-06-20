@@ -430,7 +430,10 @@ class ShareFileComposeFragment : Fragment() {
         ) {
             Text(
                 text = title.uppercase(),
-                modifier = Modifier.padding(start = dimensionResource(id = R.dimen.standard_half_padding)),
+                modifier = Modifier.padding(
+                    start = dimensionResource(id = R.dimen.standard_half_padding),
+                    top = 15.dp,
+                    bottom = 15.dp),
                 color = colorResource(id = R.color.white),
                 fontWeight = FontWeight.Bold
             )
