@@ -536,8 +536,7 @@ class ShareFileComposeFragment : Fragment() {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            var name = if (share.name.isNullOrEmpty()) share.token else share.name
-            if (share.shareType == ShareType.GROUP) name = getString(R.string.share_group_clarification, name)
+            val name = if (share.name.isNullOrEmpty()) share.token else share.name
             Text(
                 text = name!!,
                 fontSize = dimensionResource(id = R.dimen.two_line_primary_text_size).value.sp,
