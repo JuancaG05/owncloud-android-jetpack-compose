@@ -13,9 +13,10 @@ buildscript {
         lifecycleLiveData = "2.4.1"
         biometricVersion="1.1.0"
         androidX = '1.0.0'
+        compose_version = '1.1.1'
 
         // Kotlin
-        kotlinVersion = "1.6.21"
+        kotlinVersion = "1.6.10"
         coroutinesVersion = "1.6.1"
 
         // Koin

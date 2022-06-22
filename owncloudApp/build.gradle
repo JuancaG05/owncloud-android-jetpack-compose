@@ -56,12 +56,18 @@ dependencies {
     implementation "androidx.core:core-ktx:$ktxCoreVersion"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$ktxViewModelVersion"
     implementation "androidx.fragment:fragment-ktx:$ktxFragmentVersion"
+    implementation "androidx.compose.runtime:runtime-livedata:1.1.1"
 
     // Preferences
     implementation 'androidx.preference:preference-ktx:1.2.0'
 
     // MDM feedback
     implementation 'androidx.enterprise:enterprise-feedback:1.1.0'
+
+    // Jetpack Compose
+    implementation "androidx.compose.ui:ui:$compose_version"
+    implementation "androidx.compose.material:material:$compose_version"
+    implementation 'androidx.activity:activity-compose:1.4.0'
 
     // Tests
     testImplementation project(':owncloudTestUtil')
@@ -93,7 +99,10 @@ dependencies {
 
     debugImplementation "androidx.fragment:fragment-testing:1.4.1"
     debugImplementation 'com.facebook.stetho:stetho:1.6.0'
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.8.1'
+    //debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.8.1'
+
+    // Jetpack Compose
+    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
 }
 
 android {
@@ -115,6 +124,14 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion compose_version
     }
 
     kotlinOptions {

@@ -41,6 +41,7 @@ import com.owncloud.android.presentation.providers.sharing.UsersAndGroupsSearchP
 import com.owncloud.android.presentation.ui.sharing.fragments.EditPrivateShareFragment
 import com.owncloud.android.presentation.ui.sharing.fragments.PublicShareDialogFragment
 import com.owncloud.android.presentation.ui.sharing.fragments.SearchShareesFragment
+import com.owncloud.android.presentation.ui.sharing.fragments.ShareFileComposeFragment
 import com.owncloud.android.presentation.ui.sharing.fragments.ShareFileFragment
 import com.owncloud.android.presentation.ui.sharing.fragments.ShareFragmentListener
 import com.owncloud.android.presentation.viewmodels.sharing.OCShareViewModel
@@ -73,7 +74,7 @@ class ShareActivity : FileActivity(), ShareFragmentListener {
         supportFragmentManager.transaction {
             if (savedInstanceState == null && file != null && account != null) {
                 // Add Share fragment on first creation
-                val fragment = ShareFileFragment.newInstance(file, account!!)
+                val fragment = ShareFileComposeFragment.newInstance(file, account)
                 replace(
                     R.id.share_fragment_container, fragment,
                     TAG_SHARE_FRAGMENT
